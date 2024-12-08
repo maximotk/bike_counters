@@ -96,7 +96,7 @@ def add_weather(df):
     
     return df
 
-def add_lag_and_rolling_features(group):
+def _add_lag_and_rolling_features_group(group):
     group = group.sort_values(by='datetime')
     
     group['lag_1'] = group['bike_count'].shift(1)
@@ -109,6 +109,17 @@ def add_lag_and_rolling_features(group):
     group['rolling_std_7d'] = group['bike_count'].rolling(window=168, min_periods=1).std()
 
     return group
+
+# Deletes the First Week
+def add_lag_and_rolling_features(data):
+    data_lag_rolling = (
+        data.groupby('counter_id')
+        .apply(_add_lag_and_rolling_features_group)
+        .reset_index(drop=True)
+        .query(f"datetime > '{data["datetime"].min() + pd.offsets.Week()}'")
+    )
+    return data_lag_rolling
+
 
 def get_X_y(data):
     data = data.drop(columns=["counter_id", "site_id", "site_name", 
