@@ -25,3 +25,24 @@ def get_train_data(path="data/train.parquet"):
     y_array = data[_target_column_name].values
     X_df = data.drop([_target_column_name, "bike_count"], axis=1)
     return X_df, y_array
+
+def handle_missing_values(df, method):
+    df = df.sort_values(by="datetime").reset_index(drop=True)
+
+    missing_info = df.isnull().sum()
+    missing_columns = missing_info[missing_info > 0]
+    
+    if missing_columns.empty:
+        print("No missing values detected.")
+        return df
+    
+    # Print columns with missing values and their counts
+    print("Columns with missing values and their counts:")
+    print(missing_columns)
+    
+    # Replace missing values only in columns with missing data
+    interpolated_df = df.copy()
+    for col in missing_columns.index:
+        interpolated_df[col] = interpolated_df[col].interpolate(method='linear', axis=0)
+    
+    return interpolated_df

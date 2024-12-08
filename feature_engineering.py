@@ -82,6 +82,34 @@ def covid_19_2(data):
 
     return data
 
+def add_weather(df):
+    weather = pd.read_csv('data/external_data.csv')
+    weather = weather[['date', 't', 'rr1', 'u', 'ht_neige', 'raf10', 'ff', 'ww', 'etat_sol', 'tend']]
+    
+    df['date'] = df['date'].astype('datetime64[ns]')
+    weather['date'] = pd.to_datetime(weather['date'])
+
+    df = df.sort_values('date')
+    weather = weather.sort_values('date')
+    #Why not near????
+    df = pd.merge_asof(df, weather, on='date', direction='backward')
+    
+    return df
+
+def add_lag_and_rolling_features(group):
+    group = group.sort_values(by='datetime')
+    
+    group['lag_1'] = group['bike_count'].shift(1)
+    group['lag_24'] = group['bike_count'].shift(24)
+    group['lag_168'] = group['bike_count'].shift(168)
+    
+    group['rolling_mean_24h'] = group['bike_count'].rolling(window=24, min_periods=1).mean()
+    group['rolling_std_24h'] = group['bike_count'].rolling(window=24, min_periods=1).std()
+    group['rolling_mean_7d'] = group['bike_count'].rolling(window=168, min_periods=1).mean()
+    group['rolling_std_7d'] = group['bike_count'].rolling(window=168, min_periods=1).std()
+
+    return group
+
 def get_X_y(data):
     data = data.drop(columns=["counter_id", "site_id", "site_name", 
                               "bike_count", "counter_installation_date", 
