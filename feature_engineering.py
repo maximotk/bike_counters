@@ -82,19 +82,30 @@ def covid_19_2(data):
 
     return data
 
+
 def add_weather(df):
     weather = pd.read_csv('data/external_data.csv')
+
+    weather.drop_duplicates(inplace=True)
+
     weather = weather[['date', 't', 'rr1', 'u', 'ht_neige', 'raf10', 'ff', 'ww', 'etat_sol', 'tend']]
     
-    df['date'] = df['date'].astype('datetime64[ns]')
-    weather['date'] = pd.to_datetime(weather['date'])
+    df['datetime'] = df['datetime'].astype('datetime64[ns]')
+    weather['date'] = pd.to_datetime(weather['date'])    
+    df['original_index'] = df.index
 
-    df = df.sort_values('date')
-    weather = weather.sort_values('date')
-    #Why not near????
-    df = pd.merge_asof(df, weather, left_on='datetime', right_on='date', direction='backward')
+    df_sorted = df.sort_values('datetime')
+    weather_sorted = weather.sort_values('date')
     
-    return df
+    df_merged = pd.merge_asof(df_sorted, weather_sorted, left_on='datetime', right_on='date', direction='backward', suffixes=('', '_weather'))
+    
+    df_merged = df_merged.sort_values('original_index').set_index('original_index')
+    
+    
+    df_merged = df_merged.drop(columns=['date_weather'])
+    
+    return df_merged
+
 
 def _add_lag_and_rolling_features_group(group):
     group = group.sort_values(by='datetime')
