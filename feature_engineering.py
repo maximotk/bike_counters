@@ -92,7 +92,7 @@ def add_weather(df):
     df = df.sort_values('date')
     weather = weather.sort_values('date')
     #Why not near????
-    df = pd.merge_asof(df, weather, on='date', direction='backward')
+    df = pd.merge_asof(df, weather, left_on='datetime', right_on='date', direction='backward')
     
     return df
 
