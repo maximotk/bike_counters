@@ -13,10 +13,16 @@ def get_cv(X, y, random_state=0):
     cv = TimeSeriesSplit(n_splits=8)
     rng = np.random.RandomState(random_state)
 
-    for train_idx, test_idx in cv.split(X):
+    for train_idx, test_idx in cv.split(X, y):
         # Take a random sampling on test_idx so it's that samples are not consecutives.
         yield train_idx, rng.choice(test_idx, size=len(test_idx) // 3, replace=False)
-
+    #splits = []
+    #for train_idx, test_idx in cv.split(data):
+        # Take a random sampling on test_idx so that samples are not consecutive
+    #    splits.append((train_idx, rng.choice(test_idx, size=len(test_idx) // 3, replace=False)))
+    
+    # Return the last 3 splits
+    #return splits[-3:]
 
 def get_train_data(path="data/train.parquet"):
     data = pd.read_parquet(path)
