@@ -3,6 +3,8 @@ import numpy as np
 import holidays
 from pathlib import Path
 
+from sklearn.preprocessing import OneHotEncoder
+
 _target_column_name = "log_bike_count"
 
 # Why only this? Why not month and day as well?
@@ -106,29 +108,6 @@ def add_weather(df):
     
     return df_merged
 
-def add_weather2(df):
-    weather = pd.read_csv('data/external_data.csv')
-
-    weather.drop_duplicates(inplace=True)
-
-    weather = weather[['date', 't', 'rr1', 'u', 'ff', 'ww']]
-    
-    df['datetime'] = df['datetime'].astype('datetime64[ns]')
-    weather['date'] = pd.to_datetime(weather['date'])    
-    df['original_index'] = df.index
-
-    df_sorted = df.sort_values('datetime')
-    weather_sorted = weather.sort_values('date')
-    
-    df_merged = pd.merge_asof(df_sorted, weather_sorted, left_on='datetime', right_on='date', direction='backward', suffixes=('', '_weather'))
-    
-    df_merged = df_merged.sort_values('original_index').set_index('original_index')
-    
-    
-    df_merged = df_merged.drop(columns=['date_weather'])
-    
-    return df_merged
-
 
 def _add_lag_and_rolling_features_group(group):
     group = group.sort_values(by='datetime')
@@ -150,7 +129,7 @@ def add_lag_and_rolling_features(data):
         data.groupby('counter_id')
         .apply(_add_lag_and_rolling_features_group)
         .reset_index(drop=True)
-        .query(f"datetime > '{data["datetime"].min() + pd.offsets.Week()}'")
+        .query(f"datetime > '{data['datetime'].min() + pd.offsets.Week()}'")
     )
     return data_lag_rolling
 
@@ -163,3 +142,19 @@ def get_X_y(data):
     y_array = data[_target_column_name].values
     X_df = data.drop([_target_column_name], axis=1)
     return X_df, y_array
+
+
+def cyclic_transform(df, col, period):
+    df[f"{col}_sin"] = np.sin(2 * np.pi * df[col] / period)
+    df[f"{col}_cos"] = np.cos(2 * np.pi * df[col] / period)
+    df = df.drop(columns=col)
+    return df
+
+def one_hot_encode(df, cols):
+    encoder = OneHotEncoder(sparse_output=False, drop=None)
+    encoded_array = encoder.fit_transform(df[cols])
+    encoded_cols = encoder.get_feature_names_out(cols)
+    df_encoded = pd.DataFrame(encoded_array, columns=encoded_cols, index=df.index)
+    df_encoded = df_encoded.astype(float)
+    df = df.drop(columns=cols).join(df_encoded)
+    return df
