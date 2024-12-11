@@ -284,3 +284,12 @@ def one_hot_encode(df, cols):
     df_encoded = df_encoded.astype(float)
     df = df.drop(columns=cols).join(df_encoded)
     return df
+
+
+def sin_transformer(period):
+    from sklearn.preprocessing import FunctionTransformer
+    return FunctionTransformer(lambda x: np.sin(x / period * 2 * np.pi))
+
+def cos_transformer(period):
+    from sklearn.preprocessing import FunctionTransformer
+    return FunctionTransformer(lambda x: np.cos(x / period * 2 * np.pi))
