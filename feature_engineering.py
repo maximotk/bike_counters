@@ -1,3 +1,7 @@
+import numpy as np
+import pandas as pd
+
+
 _target_column_name = "log_bike_count"
 
 # Codidy Data
@@ -15,6 +19,7 @@ _target_column_name = "log_bike_count"
     """
 # ==============================================================================
 def codify_date(data):
+    import holidays
     fr_holidays = holidays.France()
 
     data["datetime"] = pd.to_datetime(data["date"])
@@ -44,6 +49,7 @@ def codify_date(data):
 """
 # ==============================================================================
 def codify_date_2(data):
+    import holidays
     fr_holidays = holidays.France()
 
     data["datetime"] = data["date"]
