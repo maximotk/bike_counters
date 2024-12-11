@@ -1,12 +1,5 @@
-import os
-
-import numpy as np
-import pandas as pd
-from sklearn.model_selection import TimeSeriesSplit
-
 problem_title = "Bike count prediction"
 _target_column_name = "log_bike_count"
-# A type (class) which will be used to create wrapper objects for y_pred
 
 
 def get_cv(X, y, random_state=0):
@@ -16,13 +9,6 @@ def get_cv(X, y, random_state=0):
     for train_idx, test_idx in cv.split(X, y):
         # Take a random sampling on test_idx so it's that samples are not consecutives.
         yield train_idx, rng.choice(test_idx, size=len(test_idx) // 3, replace=False)
-    #splits = []
-    #for train_idx, test_idx in cv.split(data):
-        # Take a random sampling on test_idx so that samples are not consecutive
-    #    splits.append((train_idx, rng.choice(test_idx, size=len(test_idx) // 3, replace=False)))
-    
-    # Return the last 3 splits
-    #return splits[-3:]
 
 def get_train_data(path="data/train.parquet"):
     data = pd.read_parquet(path)
@@ -32,6 +18,16 @@ def get_train_data(path="data/train.parquet"):
     X_df = data.drop([_target_column_name, "bike_count"], axis=1)
     return X_df, y_array
 
+# Handles missing values in a dataframe by applying an interpolation method
+"""
+    Parameters:
+    df (pd.DataFrame): The input dataframe with potential missing values.
+    method (str): The interpolation method to use (default is "linear"). This can be adjusted as needed.
+
+    Returns:
+    pd.DataFrame: The dataframe with missing values handled.
+    """
+# ==============================================================================
 def handle_missing_values(df, method):
     df = df.sort_values(by="datetime").reset_index(drop=True)
 

@@ -1,13 +1,19 @@
-import pandas as pd
-import numpy as np
-import holidays
-from pathlib import Path
-
-from sklearn.preprocessing import OneHotEncoder
-
 _target_column_name = "log_bike_count"
 
-# Why only this? Why not month and day as well?
+# Codidy Data
+# Codifies the datetime information into several key date-related features
+"""
+    Parameters:
+    data (pd.DataFrame): The input dataframe with a `date` column, which will be converted to datetime.
+
+    Returns:
+    pd.DataFrame: The input dataframe with the following additional columns:
+                  - `hour`: The hour part of the datetime.
+                  - `weekday`: The day of the week (0=Monday, 6=Sunday).
+                  - `daymonth`: A combination of the day and month in `DD_MM` format.
+                  - `IsHoliday`: A boolean indicating whether the day is a holiday in France.
+    """
+# ==============================================================================
 def codify_date(data):
     fr_holidays = holidays.France()
 
@@ -20,6 +26,23 @@ def codify_date(data):
     
     return data
 
+# Codidy Data
+# Extracts: Datetime, Date, Year, Month, Day, Day of Week, Hour, Is Weekend, Is Holiday
+"""
+    Parameters:
+    data (pd.DataFrame): The input dataframe with a column `datetime` containing date and time information.
+
+    Returns:
+    pd.DataFrame: The input dataframe with additional date-related features, including:
+                  - `year`: The year of the datetime.
+                  - `month`: The month of the datetime.
+                  - `day`: The day of the datetime.
+                  - `day_of_week`: The day of the week (0=Monday, 6=Sunday).
+                  - `hour`: The hour of the datetime.
+                  - `is_weekend`: A boolean flag indicating whether the day is a weekend.
+                  - `IsHoliday`: A boolean flag indicating whether the day is a public holiday in France.
+"""
+# ==============================================================================
 def codify_date_2(data):
     fr_holidays = holidays.France()
 
@@ -35,7 +58,17 @@ def codify_date_2(data):
 
     return data
 
-# Has to be used after codify date!!!
+# Removes Outliers
+# Outliers: For each counter, remove observations for days with zero bike 
+#           counts throughout the entire day.
+"""
+    Parameters:
+    data (pd.DataFrame): The input dataframe containing columns `counter_name`, `datetime`, and `log_bike_count`.
+
+    Returns:
+    pd.DataFrame: A cleaned version of the input dataframe with observations removed where the bike count is zero for an entire day.
+"""
+# ==============================================================================
 def remove_outliers(data):
     data["date_truncated"] = data["datetime"].dt.floor("D")
 
@@ -53,11 +86,21 @@ def remove_outliers(data):
 
     return cleaned_data
 
+# Add Covid Data with 1 during Lockdowns and 0 otherwise
+# Quarantine Periods: 2020-10-30", "2020-12-15
+#                     2021-03-20", "2021-05-19
+"""
+    Parameters:
+    data (pd.DataFrame): The input dataframe containing a 'datetime' column, which is used to assign the 'Covid-19' label.
+
+    Returns:
+    pd.DataFrame: The input dataframe with an added 'Covid-19' column (binary: 1 for COVID-19 periods, 0 otherwise).
+    """
+# ==============================================================================
 def covid_19(data):
     date_ranges = [
         ("2020-10-30", "2020-12-15"),
         ("2021-03-20", "2021-05-19"),
-#         ("2020-10-30", "2021-05-19")
     ]
 
     data["Covid-19"] = 0 
@@ -66,6 +109,31 @@ def covid_19(data):
 
     return data
 
+# Add Covid-19 Stringency Index
+'''Enrich a dataset with COVID-19 stringency index data for France.
+
+    Parameters
+    ----------
+    data : DataFrame
+        The input DataFrame containing a 'date' column.
+
+    Returns
+    -------
+    data : DataFrame
+        The input DataFrame merged with France's stringency index data based on the 'date' column.
+
+    Source
+    -------
+    Thomas Hale, Noam Angrist, Rafael Goldszmidt, Beatriz Kira, Anna Petherick,
+    Toby Phillips, Samuel Webster, Emily Cameron-Blake, Laura Hallas, Saptarshi Majumdar,
+    and Helen Tatlow. (2021). “A global panel database of pandemic policies (Oxford
+    COVID-19 Government Response Tracker).” Nature Human Behaviour.
+    https://doi.org/10.1038/s41562-021-01079-8
+   
+    Stringency Index description:
+    https://github.com/OxCGRT/covid-policy-dataset/blob/main/documentation_and_codebook.md#calculation-of-policy-indices
+    '''
+# ====================================================================================================================
 def covid_19_2(data):
     data["date"] = pd.to_datetime(data["date"])
     min = data["date"].min().strftime('%Y-%m-%d')
@@ -84,7 +152,16 @@ def covid_19_2(data):
 
     return data
 
+# Add Weather Data (external data)
+# Columns: 't', 'rr1', 'u', 'ht_neige', 'raf10', 'ff', 'ww', 'etat_sol', 'tend'
+"""
+    Parameters:
+    df (pd.DataFrame): The input dataframe containing datetime and other features.
 
+    Returns:
+    pd.DataFrame: A dataframe with the original data combined with relevant weather features.
+"""
+# ==============================================================================
 def add_weather(df):
     weather = pd.read_csv('data/external_data.csv')
 
@@ -108,7 +185,15 @@ def add_weather(df):
     
     return df_merged
 
+# Add Lags or Rolling Mean or Rollind Standard Deviation for one group
+"""
+    Parameters:
+    group (pd.DataFrame): A subset of the data, typically grouped by 'counter_id', containing columns like 'datetime' and 'bike_count'.
 
+    Returns:
+    pd.DataFrame: The input group with additional lag and rolling features.
+"""
+# ==============================================================================
 def _add_lag_and_rolling_features_group(group):
     group = group.sort_values(by='datetime')
     
@@ -123,7 +208,15 @@ def _add_lag_and_rolling_features_group(group):
 
     return group
 
-# Deletes the First Week
+# Add Lags or Rolling Mean or Rollind Standard Deviation
+"""
+    Parameters:
+    data (pd.DataFrame): The input dataframe containing the data with a 'counter_id' and 'datetime' column.
+
+    Returns:
+    pd.DataFrame: The transformed dataframe with added lag and rolling features, filtered by datetime.
+"""
+# ==============================================================================
 def add_lag_and_rolling_features(data):
     data_lag_rolling = (
         data.groupby('counter_id')
@@ -134,6 +227,16 @@ def add_lag_and_rolling_features(data):
     return data_lag_rolling
 
 
+# Get X and y 
+'''
+    Parameters:
+    data (pd.DataFrame): The input dataframe containing the data to process.
+
+    Returns:
+    X_df (pd.DataFrame): A dataframe containing the features used for modeling.
+    y_array (np.array): A numpy array containing the target values.
+'''
+# ==============================================================================
 def get_X_y(data):
     data = data.drop(columns=["counter_id", "site_id", "site_name", 
                               "bike_count", "counter_installation_date", 
@@ -144,13 +247,36 @@ def get_X_y(data):
     return X_df, y_array
 
 
+# Transforms a Cyclical Feature into Sine and Cosine Components
+"""
+    Parameters:
+    df (pd.DataFrame): The dataframe containing the cyclical feature.
+    col (str): The name of the column containing the cyclical feature to transform.
+    period (int): The period of the cyclical feature,
+
+    Returns:
+    pd.DataFrame: The dataframe with the original column replaced by its sine and cosine transformations.
+"""
+# ==============================================================================
 def cyclic_transform(df, col, period):
     df[f"{col}_sin"] = np.sin(2 * np.pi * df[col] / period)
     df[f"{col}_cos"] = np.cos(2 * np.pi * df[col] / period)
     df = df.drop(columns=col)
     return df
 
+# Applies One-Hot Encoding to specified columns in the dataframe
+"""
+    Parameters:
+    df (pd.DataFrame): The dataframe containing the columns to encode.
+    cols (list of str): A list of column names to apply One-Hot Encoding on.
+
+    Returns:
+    pd.DataFrame: A dataframe with the original columns replaced by their One-Hot Encoded representations.
+    """
+# ==============================================================================
 def one_hot_encode(df, cols):
+    from sklearn.preprocessing import OneHotEncoder
+
     encoder = OneHotEncoder(sparse_output=False, drop=None)
     encoded_array = encoder.fit_transform(df[cols])
     encoded_cols = encoder.get_feature_names_out(cols)
