@@ -1,0 +1,129 @@
+import numpy as np
+import pandas as pd
+from sklearn.preprocessing import OneHotEncoder, FunctionTransformer
+
+_target_column_name = "log_bike_count"
+
+
+def remove_outliers(data: pd.DataFrame) -> pd.DataFrame:
+    """
+    Remove outlier days where the bike count is zero for the entire day.
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        Input dataframe containing at least:
+        - 'counter_name'
+        - 'datetime'
+        - 'log_bike_count'
+
+    Returns
+    -------
+    pd.DataFrame
+        Cleaned dataframe with full-zero days removed.
+    """
+    data["date_truncated"] = data["datetime"].dt.floor("D")
+
+    cleaned_data = (
+        data.groupby(["counter_name", "date_truncated"])["log_bike_count"]
+        .sum()
+        .to_frame()
+        .reset_index()
+        .query("log_bike_count == 0")
+        [["counter_name", "date_truncated"]]
+        .merge(data, on=["counter_name", "date_truncated"], how="right", indicator=True)
+        .query("_merge == 'right_only'")
+        .drop(columns=["_merge", "date_truncated"])
+    )
+
+    return cleaned_data
+
+
+def get_X_y(data: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray]:
+    """
+    Split dataframe into features (X) and target (y).
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        Input dataframe containing the target column 'log_bike_count'.
+
+    Returns
+    -------
+    X_df : pd.DataFrame
+        Feature dataframe with non-predictive columns removed.
+    y_array : np.ndarray
+        Target array (log_bike_count).
+    """
+    data = data.drop(
+        columns=[
+            "counter_id", "site_id", "site_name",
+            "bike_count", "counter_installation_date",
+            "coordinates", "counter_technical_id",
+            "latitude", "longitude", "datetime", "date",
+        ]
+    )
+    y_array = data[_target_column_name].values
+    X_df = data.drop([_target_column_name], axis=1)
+    return X_df, y_array
+
+
+def cyclic_transform(df: pd.DataFrame, col: str, period: int) -> pd.DataFrame:
+    """
+    Encode a cyclical feature into sine and cosine components.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input dataframe containing the cyclical column.
+    col : str
+        Column name to encode.
+    period : int
+        Period of the cycle (e.g. 24 for hours in a day).
+
+    Returns
+    -------
+    pd.DataFrame
+        Dataframe with sine and cosine features replacing the original column.
+    """
+    df[f"{col}_sin"] = np.sin(2 * np.pi * df[col] / period)
+    df[f"{col}_cos"] = np.cos(2 * np.pi * df[col] / period)
+    return df.drop(columns=col)
+
+
+def one_hot_encode(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame:
+    """
+    Apply one-hot encoding to categorical columns.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input dataframe containing categorical columns.
+    cols : list of str
+        List of categorical columns to encode.
+
+    Returns
+    -------
+    pd.DataFrame
+        Dataframe with categorical variables replaced by their encoded representation.
+    """
+    encoder = OneHotEncoder(sparse_output=False, drop=None)
+    encoded_array = encoder.fit_transform(df[cols])
+    encoded_cols = encoder.get_feature_names_out(cols)
+
+    df_encoded = pd.DataFrame(encoded_array, columns=encoded_cols, index=df.index).astype(float)
+    return df.drop(columns=cols).join(df_encoded)
+
+
+def sin_transformer(period: int) -> FunctionTransformer:
+    """
+    Create a sklearn transformer to apply sine encoding for cyclical features.
+    """
+    return FunctionTransformer(lambda x: np.sin(x / period * 2 * np.pi))
+
+
+def cos_transformer(period: int) -> FunctionTransformer:
+    """
+    Create a sklearn transformer to apply cosine encoding for cyclical features.
+    """
+    return FunctionTransformer(lambda x: np.cos(x / period * 2 * np.pi))
