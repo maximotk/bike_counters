@@ -22,7 +22,6 @@ def add_date_features(df: pd.DataFrame, use_extended: bool = True) -> pd.DataFra
     fr_holidays = holidays.France()
     df = df.copy()
 
-    # Ensure datetime is parsed correctly
     if not pd.api.types.is_datetime64_any_dtype(df["date"]):
         df["datetime"] = pd.to_datetime(df["date"])
     else:
@@ -31,7 +30,6 @@ def add_date_features(df: pd.DataFrame, use_extended: bool = True) -> pd.DataFra
     df["date"] = df["datetime"].dt.date
 
     if use_extended:
-        # Detailed feature set (codify_date_2)
         df["year"] = df["datetime"].dt.year
         df["month"] = df["datetime"].dt.month
         df["day"] = df["datetime"].dt.day
@@ -41,7 +39,6 @@ def add_date_features(df: pd.DataFrame, use_extended: bool = True) -> pd.DataFra
         df["IsHoliday"] = df["datetime"].dt.date.apply(lambda x: x in fr_holidays)
 
     else:
-        # Simpler feature set (codify_date)
         df["hour"] = df["datetime"].dt.hour
         df["weekday"] = df["datetime"].dt.weekday
         df["daymonth"] = (
