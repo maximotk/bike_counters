@@ -38,6 +38,38 @@ def remove_outliers(data: pd.DataFrame) -> pd.DataFrame:
 
     return cleaned_data
 
+def handle_missing_values(df: pd.DataFrame, method: str = "linear") -> pd.DataFrame:
+    """
+    Handle missing values in the dataframe by applying interpolation.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input dataframe containing at least:
+        - 'datetime' (used for sorting before interpolation)
+        - other numeric columns with potential missing values
+    method : str, optional
+        Interpolation method to use (default is "linear").
+        Other options can be provided as supported by pandas.
+
+    Returns
+    -------
+    pd.DataFrame
+        Dataframe with missing values interpolated.
+    """
+    df = df.sort_values(by="datetime").reset_index(drop=True)
+
+    missing_info = df.isnull().sum()
+    missing_columns = missing_info[missing_info > 0]
+
+    if missing_columns.empty:
+        return df
+
+    interpolated_df = df.copy()
+    for col in missing_columns.index:
+        interpolated_df[col] = interpolated_df[col].interpolate(method=method, axis=0)
+
+    return interpolated_df
 
 def get_X_y(data: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray]:
     """

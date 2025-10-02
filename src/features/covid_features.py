@@ -32,7 +32,7 @@ def add_covid_lockdown_flag(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def add_covid_stringency_index(df: pd.DataFrame, index_path: str = "data/Covid_19_Index.csv") -> pd.DataFrame:
+def add_covid_stringency_index(df: pd.DataFrame, path: str = "external_data/Covid_19_Index.csv") -> pd.DataFrame:
     """
     Merge the Oxford COVID-19 Government Response Tracker stringency index for France.
 
@@ -40,7 +40,7 @@ def add_covid_stringency_index(df: pd.DataFrame, index_path: str = "data/Covid_1
     ----------
     df : pd.DataFrame
         Input DataFrame containing a 'date' column.
-    index_path : str, optional
+    path : str, optional
         Path to the CSV file containing the stringency index data (default: "data/Covid_19_Index.csv").
 
     Returns
@@ -61,7 +61,7 @@ def add_covid_stringency_index(df: pd.DataFrame, index_path: str = "data/Covid_1
 
     min_date, max_date = df["date"].min(), df["date"].max()
 
-    covid_index = pd.read_csv(index_path)
+    covid_index = pd.read_csv(path)
     covid_index["date"] = pd.to_datetime(covid_index["Date"], format="%Y%m%d")
 
     covid_index = (

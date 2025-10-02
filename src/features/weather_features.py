@@ -1,6 +1,6 @@
 import pandas as pd
 
-def add_weather(df: pd.DataFrame, weather_path: str = "data/external_data.csv") -> pd.DataFrame:
+def add_weather(df: pd.DataFrame, path: str = "external_data/weather_data.csv") -> pd.DataFrame:
     """
     Merge external weather data with the main dataset based on datetime.
 
@@ -8,7 +8,7 @@ def add_weather(df: pd.DataFrame, weather_path: str = "data/external_data.csv") 
     ----------
     df : pd.DataFrame
         Input DataFrame containing at least a 'datetime' column.
-    weather_path : str, optional
+    path : str, optional
         Path to the external weather CSV file (default: "data/external_data.csv").
 
     Returns
@@ -17,11 +17,11 @@ def add_weather(df: pd.DataFrame, weather_path: str = "data/external_data.csv") 
         DataFrame enriched with weather features:
         ['t', 'rr1', 'u', 'ht_neige', 'raf10', 'ff', 'ww', 'etat_sol', 'tend'].
     """
-    weather = pd.read_csv(weather_path).drop_duplicates()
+    weather = pd.read_csv(path).drop_duplicates()
     weather = weather[["date", "t", "rr1", "u", "ht_neige", "raf10", "ff", "ww", "etat_sol", "tend"]]
 
     df = df.copy()
-    df["datetime"] = pd.to_datetime(df["datetime"])
+    df["datetime"] = pd.to_datetime(df["datetime"]).astype('datetime64[ns]')
     weather["date"] = pd.to_datetime(weather["date"])
 
     df["original_index"] = df.index
