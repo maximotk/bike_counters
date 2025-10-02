@@ -105,7 +105,7 @@ def cyclic_transform(df: pd.DataFrame, col: str, period: int) -> pd.DataFrame:
     Encode a cyclical feature into sine and cosine components.
 
     Parameters
-    ----------
+    ---------- 
     df : pd.DataFrame
         Input dataframe containing the cyclical column.
     col : str
