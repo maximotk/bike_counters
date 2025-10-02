@@ -7,6 +7,11 @@ from skforecast.preprocessing import RollingFeatures
 from skforecast.preprocessing import series_long_to_dict
 from skforecast.preprocessing import exog_long_to_dict
 
+from features.covid_features import add_covid_stringency_index
+from features.date_features import add_date_features
+from features.preprocessing import remove_outliers, handle_missing_values, cyclic_transform, one_hot_encode
+from features.weather_features import add_weather
+
 class AutoregressiveModel:
     """
     AutoregressiveModel multi-series forecaster using recursive boosting.
@@ -34,6 +39,42 @@ class AutoregressiveModel:
         self.space = space
         self.endog = endog
         self.forecaster = None
+
+    def preprocess(self, data: pd.DataFrame, base_path: str) -> pd.DataFrame:
+        """
+        Preprocess the input data: add covid and weather data, remove outliers, handle missing values, 
+        apply cyclic transformations, encode categorical variables, and drop unnecessary columns.
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            Input dataframe to preprocess.
+        base_path : str
+            Base path.
+
+        Returns
+        -------
+        pd.DataFrame
+            Preprocessed dataframe ready for model fitting.
+        """
+        data = data.copy()
+        data = (
+            data
+            .pipe(add_date_features)
+            .pipe(remove_outliers)
+            .pipe(add_covid_stringency_index, path=base_path+"external_data/Covid_19_Index.csv")
+            .pipe(add_weather, path=base_path+"external_data/weather_data.csv")
+            .pipe(handle_missing_values, method="linear")
+            .pipe(cyclic_transform, col="hour", period=24)
+            .pipe(one_hot_encode, cols=["year", "month", "day", "day_of_week"])
+            .drop(columns=["counter_id", "site_id", "site_name", "counter_installation_date", 
+                                    "coordinates", "counter_technical_id",
+                                    "latitude", "longitude", "date", "bike_count"])
+            .pipe(lambda df: df.astype({col: float for col in df.select_dtypes(include="int").columns}))
+            .pipe(lambda df: df.astype({col: float for col in df.select_dtypes(include="bool").columns}))
+        )
+
+        return data
 
     def fit(self, X: pd.DataFrame, y: pd.Series) -> None:
         """
