@@ -1,6 +1,7 @@
 from xgboost import XGBRegressor
 
 from features.covid_features import add_covid_stringency_index
+from features.weather_features import add_weather
 from features.date_features import add_date_features
 from features.preprocessing import remove_outliers, handle_missing_values, cyclic_transform, one_hot_encode
 
@@ -42,17 +43,35 @@ class XGBoostModel:
 
         self.model: XGBRegressor = XGBRegressor(**params)
 
-    def preprocess(self, data: pd.DataFrame, base_path: str) -> pd.DataFrame:
+    def preprocess(
+        self,
+        data: pd.DataFrame,
+        base_path: str,
+        remove_outliers_flag: bool = True,
+        add_covid_flag: bool = True,
+        add_weather_flag: bool = True,
+        handle_missing_flag: bool = True,
+        missing_method: str = "linear"
+    ) -> pd.DataFrame:
         """
-        Preprocess the input data: add covid data, remove outliers,
-        apply cyclic transformations, encode categorical variables, and drop unnecessary columns.
+        Preprocess the input data with optional steps.
 
         Parameters
         ----------
         data : pd.DataFrame
             Raw input dataframe (must contain the columns referenced above).
         base_path : str
-            Base path used to locate external CSVs (e.g., Covid index).
+            Base path used to locate external CSVs (e.g., Covid index, weather data).
+        remove_outliers_flag : bool, default=True
+            Whether to remove outliers.
+        add_covid_flag : bool, default=True
+            Whether to add COVID stringency index.
+        add_weather_flag : bool, default=True
+            Whether to add weather data.
+        handle_missing_flag : bool, default=True
+            Whether to handle missing values.
+        missing_method : str, default="linear"
+            Method for handling missing values.
 
         Returns
         -------
@@ -60,11 +79,30 @@ class XGBoostModel:
             Preprocessed dataframe ready for `.fit()` / `.predict()`.
         """
         mdata = data.copy()
+
+        mdata = mdata.pipe(add_date_features)
+        print(data.dtypes)
+
+        if remove_outliers_flag:
+            mdata = mdata.pipe(remove_outliers)
+
+        if add_covid_flag:
+            mdata = mdata.pipe(
+                add_covid_stringency_index, 
+                path=base_path + "external_data/Covid_19_Index.csv"
+            )
+
+        if add_weather_flag:
+            mdata = mdata.pipe(
+                add_weather, 
+                path=base_path + "external_data/weather_data.csv"
+            )
+
+        if handle_missing_flag:
+            mdata = mdata.pipe(handle_missing_values, method=missing_method)
+
         mdata = (
             mdata
-            .pipe(add_date_features)
-            .pipe(remove_outliers)
-            .pipe(add_covid_stringency_index, path=base_path + "external_data/Covid_19_Index.csv")
             .pipe(cyclic_transform, col="hour", period=24)
             .assign(counter_name_dup=lambda x: x["counter_name"])
             .pipe(one_hot_encode, cols=["counter_name", "year", "month", "day", "day_of_week"])
@@ -82,6 +120,7 @@ class XGBoostModel:
         )
 
         return mdata
+
 
     def fit(self, X: pd.DataFrame, y: pd.Series, **fit_kwargs) -> None:
         """
