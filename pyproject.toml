@@ -1,0 +1,25 @@
+[project]
+name = "bike-counters"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "TheOneJoao",email = "joao.silva.unique@gmail.com"}
+]
+readme = "README.md"
+requires-python = "3.12.4"
+dependencies = [
+    "matplotlib (==3.9.2)",
+    "numpy (==2.0.2)",
+    "pandas (==2.2.3)",
+    "scikit-learn (==1.5.2)",
+    "skforecast (==0.14.0)",
+    "streamlit (>=1.50.0,<2.0.0)",
+    "holidays (>=0.81,<0.82)"
+]
+
+[tool.poetry]
+package-mode = false
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
