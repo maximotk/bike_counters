@@ -6,7 +6,7 @@ authors = [
     {name = "TheOneJoao",email = "joao.silva.unique@gmail.com"}
 ]
 readme = "README.md"
-requires-python = "3.12.4"
+requires-python = ">=3.12,<3.13"
 dependencies = [
     "matplotlib (==3.9.2)",
     "numpy (==2.0.2)",
@@ -14,7 +14,9 @@ dependencies = [
     "scikit-learn (==1.5.2)",
     "skforecast (==0.14.0)",
     "streamlit (>=1.50.0,<2.0.0)",
-    "holidays (>=0.81,<0.82)"
+    "holidays (>=0.81,<0.82)",
+    "plotly (>=6.3.1,<7.0.0)",
+    "xgboost (>=3.0.5,<4.0.0)"
 ]
 
 [tool.poetry]
