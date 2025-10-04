@@ -1,14 +1,11 @@
-# app.py
 import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-# Import helpers
 from utils.data_utils import load_data
 from utils.metrics import rmse, build_cumulative_error_series
 from utils.plots import make_plotly_cumulative_animation
 
-# Import models
 from models.xgboost import XGBoostModel
 from models.autoregressive import AutoregressiveModel
 
