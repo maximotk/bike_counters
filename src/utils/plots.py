@@ -1,5 +1,7 @@
 # utils/plots.py
 import plotly.graph_objects as go
+import plotly.express as px
+
 
 def make_plotly_cumulative_animation(x, y, title="Evolution", y_label="RMSE"):
     """
@@ -65,5 +67,24 @@ def make_plotly_cumulative_animation(x, y, title="Evolution", y_label="RMSE"):
         }],
         margin=dict(l=40, r=20, t=60, b=40),
         height=420
+    )
+    return fig
+
+def make_station_prediction_plot(station_data, station_name):
+    """Line plot of actual vs predicted log bike counts for one station."""
+    fig = px.line(
+        station_data,
+        x="datetime",
+        y=["log_bike_count", "log_bike_count_pred"],
+        labels={"value": "Log Bike Count", "datetime": "Date"},
+        title=f"Actual vs Predicted: {station_name}",
+        color_discrete_map={
+            "log_bike_count": "#1f77b4",      # dark blue for actual
+            "log_bike_count_pred": "#cd7676"  # dark red for prediction
+        },
+    )
+    fig.update_traces(
+        selector=lambda t: t.name == "log_bike_count_pred",
+        line=dict(width=3, dash="dash")
     )
     return fig
