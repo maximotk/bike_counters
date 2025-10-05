@@ -1,5 +1,5 @@
 import pandas as pd
-from utils.metrics import rmse, build_cumulative_error_series
+from app_functions.metrics import rmse, build_cumulative_error_series
 from models.xgboost import XGBoostModel
 from models.autoregressive import AutoregressiveModel
 

@@ -2,10 +2,10 @@ import streamlit as st
 import pandas as pd
 from streamlit_folium import st_folium
 
-from utils.map_utils import make_counter_map
-from utils.app_pipeline import run_pipeline
-from utils.data_utils import load_data
-from utils.plots import make_plotly_cumulative_animation, make_station_prediction_plot
+from app_functions.map_creation import make_counter_map
+from app_functions.app_pipeline import run_pipeline
+from app_functions.data_loading import load_data
+from app_functions.plots import make_plotly_cumulative_animation, make_station_prediction_plot
 
 st.set_page_config(layout="wide", page_title="🚲 Bike Counter Error Explorer")
 

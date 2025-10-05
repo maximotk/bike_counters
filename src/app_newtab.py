@@ -7,9 +7,9 @@ import folium
 import plotly.express as px
 
 
-from utils.data_utils import load_data
-from utils.metrics import rmse, build_cumulative_error_series
-from utils.plots import make_plotly_cumulative_animation, make_station_prediction_plot
+from app_functions.data_loading import load_data
+from app_functions.metrics import rmse, build_cumulative_error_series
+from app_functions.plots import make_plotly_cumulative_animation, make_station_prediction_plot
 from models.xgboost import XGBoostModel
 from models.autoregressive import AutoregressiveModel
 
