@@ -1,6 +1,6 @@
 # 🚲 Predicting Cyclist Traffic in Paris
 
-This repository implements **Predicting Cyclist Traffic in Paris**, a university project at École Polytechnique applying **machine learning** to forecast hourly bike counts at stations across Paris.  
+This repository implements **Predicting Cyclist Traffic in Paris**, a university project at École Polytechnique applying **machine learning** to forecast hourly bike counts at stations across Paris. The project was also part of a Kaggle competition, which has since concluded.
 It combines **gradient boosting** and **autoregressive** modeling approaches with **feature engineering** on weather, temporal, and COVID-related data.
 
 👥 **Developed by:** [@maximotk](https://github.com/maximotk) & [@TheOneJoao](https://github.com/TheOneJoao)
@@ -9,13 +9,7 @@ It combines **gradient boosting** and **autoregressive** modeling approaches wit
 
 ## 📦 Installation & Requirements
 
-To install requirements locally:
-
-```bash
-pip install -r requirements.txt
-```
-
-Alternatively, you can use **Poetry** for reproducible dependency management:
+To install requirements locally, you can use **Poetry** for reproducible dependency management:
 
 ```bash
 poetry install
@@ -43,7 +37,7 @@ After starting the container, open your browser at **http://localhost:8501**.
 ## 📈 Project Overview
 
 This study investigates how to **predict hourly cyclist counts** across **56 counters** and **30 stations** in Paris.  
-The training data covers **September 2020 – September 2021**, and models are evaluated on data from **September – October 2021**.
+The training data covers **September 2020 – September 2021**, and models are tested on data from **September – October 2021**. The validation set (which we don't have access to) spans **October – November 2021**.
 
 The dashboard supports interactive exploration of:
 
@@ -77,7 +71,7 @@ The prediction workflow follows these main steps:
 
 ---
 
-## 🚀 Results
+## 🚀 Results (validation set)
 
 | Model | Description | Test RMSE (↓) | Notes |
 |:------|:-------------|:-------------:|:------|
