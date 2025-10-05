@@ -3,6 +3,8 @@
 This repository implements **Predicting Cyclist Traffic in Paris**, a university project at École Polytechnique applying **machine learning** to forecast hourly bike counts at stations across Paris.  
 It combines **gradient boosting** and **autoregressive** modeling approaches with **feature engineering** on weather, temporal, and COVID-related data.
 
+👥 **Developed by:** [@maximotk](https://github.com/maximotk) & [@TheOneJoao](https://github.com/TheOneJoao)
+
 ---
 
 ## 📦 Installation & Requirements
