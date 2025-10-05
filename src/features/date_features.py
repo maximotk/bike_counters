@@ -47,3 +47,4 @@ def add_date_features(df: pd.DataFrame, use_extended: bool = True) -> pd.DataFra
         df["IsHoliday"] = df["datetime"].dt.date.apply(lambda x: x in fr_holidays)
 
     return df
+

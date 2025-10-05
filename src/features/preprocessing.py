@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
+from typing import Generator, Tuple
 from sklearn.preprocessing import OneHotEncoder, FunctionTransformer
+from sklearn.model_selection import TimeSeriesSplit
 
 _target_column_name = "log_bike_count"
 
@@ -98,6 +100,39 @@ def get_X_y(data: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray]:
     y_array = data[_target_column_name].values
     X_df = data.drop([_target_column_name], axis=1)
     return X_df, y_array
+
+def get_cv(X: np.ndarray, y: np.ndarray, random_state: int = 0) -> Generator[Tuple[np.ndarray, np.ndarray], None, None]:
+    """
+    Generate train-test indices for time series cross-validation with random subsampling of the test set.
+
+    Parameters
+    ----------
+    X : np.ndarray
+        Feature matrix.
+    y : np.ndarray
+        Target vector.
+    random_state : int, default=0
+        Seed for reproducible random sampling of test indices.
+
+    Yields
+    ------
+    train_idx : np.ndarray
+        Indices for the training set.
+    test_idx : np.ndarray
+        Randomly sampled indices for the test set (approximately one-third of the original test set),
+        ensuring that test samples are not consecutive.
+
+    Returns
+    -------
+    Generator[Tuple[np.ndarray, np.ndarray], None, None]
+        Generator yielding tuples of training and test indices for each fold.
+    """
+    cv = TimeSeriesSplit(n_splits=8)
+    rng = np.random.RandomState(random_state)
+
+    for train_idx, test_idx in cv.split(X, y):
+        # Take a random sampling on test_idx so that samples are not consecutive
+        yield train_idx, rng.choice(test_idx, size=len(test_idx) // 3, replace=False)
 
 
 def cyclic_transform(df: pd.DataFrame, col: str, period: int) -> pd.DataFrame:

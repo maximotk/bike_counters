@@ -1,3 +1,5 @@
+import pandas as pd
+
 def _add_lag_and_rolling_features_group(group: pd.DataFrame) -> pd.DataFrame:
     """
     Add lag and rolling statistical features to a grouped time series.
