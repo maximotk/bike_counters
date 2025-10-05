@@ -1,12 +1,15 @@
-# app_alternative.py
+# app_singleview.py
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from streamlit_folium import st_folium
+import folium
+import plotly.express as px
+
 
 from utils.data_utils import load_data
 from utils.metrics import rmse, build_cumulative_error_series
-from utils.plots import make_plotly_cumulative_animation
-
+from utils.plots import make_plotly_cumulative_animation, make_station_prediction_plot
 from models.xgboost import XGBoostModel
 from models.autoregressive import AutoregressiveModel
 
@@ -14,7 +17,7 @@ from models.autoregressive import AutoregressiveModel
 # -------------------------
 # Page Config
 # -------------------------
-st.set_page_config(layout="wide", page_title="Bike Counter Error Explorer")
+st.set_page_config(layout="wide", page_title="🚲 Bike Counter Error Explorer")
 
 base_path = ""
 parquet_path = base_path + "data/train.parquet"
@@ -22,19 +25,28 @@ end_train = "2021-08-09 23:00:00"
 
 
 # -------------------------
-# UI: Title
+# Title & Intro
 # -------------------------
 st.title("🚲 Bike Counter Error Explorer")
-st.markdown("Explore model error evolution globally and by station.")
+st.markdown("""
+Welcome to the **Bike Counter Error Explorer** —  
+an interactive dashboard to explore and visualize how predictive models perform  
+on bicycle traffic counters across the city.
+
+Use the sidebar to choose model options and feature-engineering steps,  
+then hit **▶️ Run pipeline & Visualize** to train models and view predictions.
+""")
 
 
 # -------------------------
 # Sidebar for options
 # -------------------------
-st.sidebar.header("⚙️ Options")
+st.sidebar.header("⚙️ Model & Feature Configuration")
+st.sidebar.markdown("Select your model setup:")
 
 model_choice = st.sidebar.radio("Model", ["XGBoost", "Autoregressive"], index=0)
 
+st.sidebar.markdown("**Feature Engineering Options**")
 remove_outliers_flag = st.sidebar.checkbox("Remove outliers", value=True)
 add_covid_flag = st.sidebar.checkbox("Add COVID index", value=True)
 add_weather_flag = st.sidebar.checkbox("Add weather features", value=True)
@@ -44,16 +56,68 @@ missing_method = st.sidebar.selectbox(
     "Filling method", ["linear", "quadratic"], index=0
 ) if handle_missing_flag else None
 
+st.sidebar.markdown("---")
 run_button = st.sidebar.button("▶️ Run pipeline & Visualize")
+
+
+# -------------------------
+# Always Show: Overview Map
+# -------------------------
+st.subheader("🗺️ Counter Locations Overview")
+st.markdown("""
+Below you can explore all **bike counting stations** included in the dataset.  
+Each blue marker represents one counter — click it to see the station’s name.
+""")
+
+try:
+    data = load_data(parquet_path)
+
+    # Prepare coordinates
+    map_data = (
+        data[["counter_name", "latitude", "longitude"]]
+        .drop_duplicates("counter_name")
+        .dropna(subset=["latitude", "longitude"])
+    )
+
+    m = folium.Map(location=map_data[["latitude", "longitude"]].mean().values.tolist(), zoom_start=12)
+    for _, row in map_data.iterrows():
+        folium.Marker(
+            [row["latitude"], row["longitude"]],
+            popup=row["counter_name"],
+            icon=folium.Icon(color="blue", icon="bicycle", prefix="fa")
+        ).add_to(m)
+
+    st_folium(m, width=1000, height=450)
+    st.caption(f"Showing {len(map_data)} counter locations on the map.")
+except Exception as e:
+    st.warning(f"⚠️ Map could not be displayed: {e}")
+
+
+# -------------------------
+# Always Show: Explanation (before running)
+# -------------------------
+st.markdown("---")
+st.header("🔮 Model Training & Prediction")
+st.markdown("""
+When you press **Run pipeline & Visualize**, the following steps are performed:
+
+1. **Preprocessing** of training data with your selected feature-engineering options  
+2. **Model training** on data up to August 2021  
+3. **Prediction** for the remaining test period  
+4. **Evaluation** of model performance via cumulative RMSE  
+
+Once finished, the dashboard will display:
+- 📈 **Global Error Evolution** (cumulative RMSE over time)  
+- 📊 **Station-Level Predictions** (actual vs predicted values per counter)
+""")
 
 
 # -------------------------
 # Run pipeline
 # -------------------------
 if run_button:
-    with st.spinner("Loading data and running pipeline..."):
-        # Load
-        data = load_data(parquet_path)
+    st.markdown("---")
+    with st.spinner("Running pipeline... this may take a few moments ⏳"):
 
         # -------------------------
         # Model-specific processing
@@ -128,71 +192,39 @@ if run_button:
         cum_err_df = build_cumulative_error_series(merged)
         final_overall_rmse = rmse(merged["log_bike_count"], merged["log_bike_count_pred"])
 
-        # Save results into session state
         st.session_state["merged"] = merged
         st.session_state["final_overall_rmse"] = final_overall_rmse
         st.session_state["cum_err_df"] = cum_err_df
 
 
 # -------------------------
-# Tabs (only if results exist)
+# Visualization (if model was run)
 # -------------------------
 if "merged" in st.session_state:
     merged = st.session_state["merged"]
-    final_overall_rmse = st.session_state["final_overall_rmse"]
     cum_err_df = st.session_state["cum_err_df"]
+    final_overall_rmse = st.session_state["final_overall_rmse"]
 
-    tab1, tab2 = st.tabs(["🌍 Global Performance", "📍 By Station Analysis"])
+    st.markdown("---")
+    st.header("📈 Model Performance Visualization")
 
-    # ---- Tab 1: Global ----
-    with tab1:
-        st.subheader("Overall error evolution (across all counters)")
-        st.metric("Final overall RMSE (test)", f"{final_overall_rmse:.4f}")
+    # --- Global RMSE Evolution ---
+    st.subheader("Global Error Evolution")
+    st.markdown("This plot shows how the **cumulative RMSE** evolved over time during the test period.")
+    st.metric("Final overall RMSE (test)", f"{final_overall_rmse:.4f}")
 
-        fig_overall = make_plotly_cumulative_animation(
-            cum_err_df["datetime"], cum_err_df["rmse_cumulative"],
-            title="Overall RMSE (cumulative)", y_label="RMSE"
-        )
-        st.plotly_chart(fig_overall, use_container_width=True)
+    fig_overall = make_plotly_cumulative_animation(
+        cum_err_df["datetime"], cum_err_df["rmse_cumulative"],
+        title="Overall RMSE (Cumulative)", y_label="RMSE"
+    )
+    st.plotly_chart(fig_overall, use_container_width=True)
 
-        # Summary table
-        st.subheader("Station Summary Table")
-        summary = (
-            merged.groupby("counter_name")
-            .apply(lambda g: pd.Series({
-                "RMSE": rmse(g["log_bike_count"], g["log_bike_count_pred"]),
-                "MedianAbsError": (g["log_bike_count"] - g["log_bike_count_pred"]).abs().median(),
-                "Samples": len(g)
-            }))
-            .reset_index()
-            .sort_values("RMSE")
-        )
-        st.dataframe(summary, use_container_width=True)
+    # --- Station-level Analysis ---
+    st.subheader("Station-Level Predictions")
+    st.markdown("Select an individual counter below to inspect the model’s predictions vs. actual values.")
 
-    # ---- Tab 2: Station Analysis ----
-    with tab2:
-        st.subheader("Station-Level Performance")
+    station = st.selectbox("Select a counter", merged["counter_name"].unique())
+    station_data = merged[merged["counter_name"] == station].copy()
+    fig_line = make_station_prediction_plot(station_data, station)
+    st.plotly_chart(fig_line, use_container_width=True)
 
-        station = st.selectbox("Select a counter", merged["counter_name"].unique())
-        station_data = merged[merged["counter_name"] == station].copy()
-
-        # Actual vs Predicted
-        fig_line = px.line(
-            station_data, x="datetime",
-            y=["log_bike_count", "log_bike_count_pred"],
-            labels={"value": "Log Bike Count", "datetime": "Date"},
-            title=f"Actual vs Predicted: {station}"
-        )
-        st.plotly_chart(fig_line, use_container_width=True)
-
-        # Rolling RMSE
-        station_data["abs_error"] = (station_data["log_bike_count"] - station_data["log_bike_count_pred"]).abs()
-        station_data["rmse_rolling_24"] = (
-            station_data["abs_error"].rolling(24, min_periods=1).apply(lambda x: (x**2).mean()**0.5)
-        )
-        fig_rmse = px.line(
-            station_data, x="datetime", y="rmse_rolling_24",
-            labels={"rmse_rolling_24": "24h Rolling RMSE"},
-            title=f"24h Rolling RMSE: {station}"
-        )
-        st.plotly_chart(fig_rmse, use_container_width=True)
